@@ -5,7 +5,8 @@ from os.path import isfile, join, isdir,getmtime, getctime
 import time
 import sys
 import pyexiv2
-from shutil import copy
+from shutil import copy, rmtree
+import exiftool
 
 path = sys.argv[1]
 print ("path = "+path)
@@ -14,19 +15,36 @@ list_of_files_and_folders = listdir(path)
 temp_path = join("/home/tiphanie", "temp")
 errors = []
 
-mkdir(temp_path)
-print("temp_path = "+temp_path)
+try:
+    mkdir(temp_path)
+    print("temp_path = "+temp_path)
+except:
+    print("temp_path already exists")
+    rmtree(temp_path)
+    mkdir(temp_path)
+    print("temp_path is now empty")
 
 def move_file(file=''):
         print("file to handle = "+file)
         try:
-            metadata = pyexiv2.ImageMetadata(file) 
-            metadata.read()
-            #print(metadata.exif_keys)
-            tag = metadata['Exif.Image.DateTime']
-            mydate = tag.raw_value
-            mydate = tag.value.strftime('%d'+'_'+'%B'+'_'+'%Y')
-            #print("my date = "+mydate)
+            with exiftool.ExifTool() as et:
+                metadata = et.get_metadata(file)
+            print(metadata)
+            print("\n")
+            with exiftool.ExifTool() as et:
+                #picture case
+                tag = et.get_tag("EXIF:DateTimeOriginal",file)
+                if tag == None:
+                    #video case
+                    tag = et.get_tag("QuickTime:CreateDate",file)
+            print("tag")
+            print(tag)
+            print("\n")
+            if tag == None:
+                mydate = "other"
+            else:
+                mydate = tag[:10].replace(":","-")
+            print("my date = "+mydate)
             new_path=join(temp_path,mydate)
             #print("new path = "+new_path)
             if isdir(new_path):
@@ -38,11 +56,13 @@ def move_file(file=''):
             copy(file,new_path)
         except:
             errors.append(file)
-
+            print("Data info not found")
+ 
 for root, directories, filenames in os.walk(path):
     for filename in filenames:
         move_file(join(root,filename))
 
 if len(errors) > 0:
-    print('Files with error: ')
-    print(errors)
+    pass
+    #print('Files with error: ')
+    #print(errors)
