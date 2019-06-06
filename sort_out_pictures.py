@@ -11,7 +11,6 @@ import exiftool
 path = sys.argv[1]
 print ("path = "+path)
 list_of_files_and_folders = listdir(path)
-#temp_path = join(path,"temp")
 temp_path = join("/home/tiphanie", "temp")
 errors = []
 
